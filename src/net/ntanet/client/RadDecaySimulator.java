@@ -30,10 +30,18 @@ public class RadDecaySimulator implements EntryPoint {
     ControlPanel control;
     Timer t;
 	private int nAtoms;
+	private int halflife;
 
 	public RadDecaySimulator () {
 		eventPlanner = new SimEventPlanner(this);
 		this.nAtoms = 200;
+		this.halflife = 100;
+	}
+
+	public RadDecaySimulator (int halflife, int nAtoms) {
+		eventPlanner = new SimEventPlanner(this);
+		this.nAtoms = 200;
+		this.halflife = 100;
 	}
 
     public void onModuleLoad() {
@@ -47,9 +55,12 @@ public class RadDecaySimulator implements EntryPoint {
         panel = new HorizontalPanel();
     	RootPanel.get( divTagId ).add(panel);
 
-   	 	sandbox = new AtomSandbox(nAtoms, new Dimension(400,600));
-   	 	chart = new DecayChart(nAtoms, new Dimension(600,450));
-        control = new ControlPanel(nAtoms, new Dimension(250,250));
+   	 	chart = new DecayChart(halflife, nAtoms, new Dimension(600,450));
+   	 	sandbox = new AtomSandbox(halflife, nAtoms, new Dimension(400,600));
+        control = new ControlPanel(halflife, nAtoms, new Dimension(250,250));
+        
+        chart.setAtomStride(1.0);
+        chart.setTickStride(1.0);
 
         panel.add(sandbox);
         panel.add(chart);
@@ -59,9 +70,7 @@ public class RadDecaySimulator implements EntryPoint {
 		  @Override
 		  public void run() {
 			  sandbox.tick();
-			  chart.update(sandbox.nAtoms);
-			  chart.tick();
-			  GWT.log("run tick nAtoms " + sandbox.nAtoms);
+			  chart.tick(sandbox.nAtoms);
 			  if (sandbox.nAtoms == 0)
 				  t.cancel();
 		  }

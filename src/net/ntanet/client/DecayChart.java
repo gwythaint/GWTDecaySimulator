@@ -16,6 +16,7 @@ import com.google.gwt.user.client.ui.Widget;
 public class DecayChart extends Composite {
 	int xpos, ypos;
 	int xscale, yscale;
+	int ticks;
 //	private Image offScreenImage = null;
 	private Canvas osg = null;
 	private Canvas canvas;
@@ -26,8 +27,12 @@ public class DecayChart extends Composite {
 	private int yoffset = 0;
 	int width;
 	int height;
-	
-	public DecayChart(int nAtoms, Dimension dim) {
+	private Double tickStride;
+	private Double atomStride;
+    CssColor color;
+	private int nAtoms;
+
+    public DecayChart(int halflife, int nAtoms, Dimension dim) {
 		xpos = 0;
 		ypos = 0;
 		this.xscale = dim.width;
@@ -56,23 +61,27 @@ public class DecayChart extends Composite {
 	public void clearCanvas(Canvas canvas, double x, double y, double w, double h) {
 	    Context2d context = canvas.getContext2d();
 	    CssColor color = CssColor.make(255,255,255);
-	    context.setFillStyle(color);
+	    context.setFillStyle(this.color);
         context.fillRect( x, y, w, h);
         context.fill();
 	}
 
 	public void drawRect(Canvas canvas, double x, double y, double w, double h) {
 	    Context2d context = canvas.getContext2d();
-	    CssColor color = CssColor.make(255,0,0);
-	    context.setFillStyle(color);
+	    context.setFillStyle(this.color);
         context.fillRect( x, y, w, h);
         context.fill();
 	}
 	
 	public void drawLine(Canvas canvas, int x1, int y1, int x2, int y2) {
+		double lineWidth = 1.0;
+		drawLine(canvas, x1, y1, x2, y2, lineWidth);
+	}
+
+	public void drawLine(Canvas canvas, int x1, int y1, int x2, int y2, double lineWidth) {
 	    Context2d context = canvas.getContext2d();
-	    CssColor color = CssColor.make(0,0,0);
 	    context.setFillStyle(color);
+	    context.setLineWidth(lineWidth);
 	    context.setStrokeStyle(color);
 	    context.beginPath();
 	    context.moveTo(x1, y1);
@@ -83,6 +92,7 @@ public class DecayChart extends Composite {
 	}
 
 	public void update(int nAtoms) {
+		this.nAtoms = nAtoms;
 		numerator = nAtoms;
 		double fraction = ((double)numerator / (double)denominator);
 		GWT.log("fraction: " + fraction + " numerator " + numerator + " denominator " + denominator);
@@ -92,25 +102,81 @@ public class DecayChart extends Composite {
 
 	public void reset(int nAtoms) {
 		xpos = 0;
-
+		ticks = 0;
 		numerator = nAtoms;
 		denominator = nAtoms;
 		
 		update(nAtoms);
 //		offScreenImage = null;
-		clearCanvas(canvas, 0, 0, width, height);
+	    this.color = CssColor.make(255,255,255);
+	    clearCanvas(canvas, 0, 0, width, height);
+		paintGrid(canvas);
+		paintHalfLife(canvas);
 		repaint();
 	}
 
 	public void tick() {
+	    paintEFunction();
 	    repaint();
-		xpos++;
+		ticks++;
 	}
 
 	private void repaint() {
 		paintComponent(canvas);
 	}
+	
+	private void paintEFunction () {
+		int y1;
+		int x1 = (int) ((getXpos() + xoffset) * tickStride);
+		y1 = yscale - (int)(yscale * Math.exp(-ticks * 0.693 / 100));
 
+		this.color = CssColor.make(0,255,0);
+	    this.drawRect(canvas, x1, x1, 5, 5);
+
+	    this.color = CssColor.make(0,0,255);
+
+	    this.drawRect(canvas, x1, y1, 5, 5);
+		
+		GWT.log("x1: " + x1 + " y1 " + y1 + " denom: " + denominator + " yscale: " + yscale);
+	}
+	
+	private int getXpos() {
+		return ticks;
+	}
+
+	private void paintGrid(Canvas canvas) {
+		int x, y;
+
+	    this.color = CssColor.make(0,0,0);
+	    drawLine(canvas, 1, 1, width - 1, 1);
+	    drawLine(canvas, 1, 1, 1, height - 1);
+	    drawLine(canvas, 1, height - 1, width - 1, height - 1);
+	    drawLine(canvas, width - 1, 1, width - 1 , height - 1);
+	    drawLine(canvas, 50, 50, 50, 50);
+
+	    /* horizontal grid lines */
+	    for (y = height / 10; y < height;) {
+		    drawLine(canvas, 0, y, width, y, 0.2);
+	    	y += (height / 10);
+	    }
+	    /* vertical grid lines */
+//	    for (x = width / 10; x < width;) {
+//	    	drawLine(canvas, x, height, x, 0, 0.2);
+//	    	x += (width / 10);
+//	    }
+	}
+
+	private void paintHalfLife(Canvas canvas) {
+		int x, y;
+
+	    this.color = CssColor.make(255,0,255);
+
+	    /* vertical grid lines */
+	    for (x = 100; x < width; x += 100) {
+	    	drawLine(canvas, x, height, x, 0, 2.0);
+	    }
+	}
+	
 	private void paintComponent(Canvas canvas) {
 		if (osg == null)
 			osg = canvas;
@@ -121,36 +187,39 @@ public class DecayChart extends Composite {
 //		}
 //
 //		
-		if ((xpos < xscale) && (ypos > 0) && (osg != null))
+		if ((getXpos() < xscale) && (ypos > 0) && (osg != null))
 			renderOffScreen(osg);
 //		
 //		g.drawImage(offScreenImage, 0, 0, null);
 
-		drawLine(canvas, 1, 1, width - 1, 1);
-	    drawLine(canvas, 1, 1, 1, height - 1);
-	    drawLine(canvas, 1, height - 1, width - 1, height - 1);
-	    drawLine(canvas, width - 1, 1, width - 1 , height - 1);
-	    drawLine(canvas, 50, 50, 50, 50);
-
-	    drawLine(canvas, 0, height / 4, 15, height / 4);
-	    drawLine(canvas, 0, height / 2, 15, height / 2);
-	    drawLine(canvas, 0, 3 * height / 4, 15, 3 * height / 4);
-	    
-	    drawLine(canvas, width / 4, height - 1, width / 4, height - 15);
-	    drawLine(canvas, width / 2, height - 1, width / 2, height - 15);
-	    drawLine(canvas, 3 * width / 4, height - 1, 3 * width / 4, height - 15);
 	}
 
 	private void renderOffScreen(Canvas g) {
 		int x1, y1, x2, y2, xstride, ystride;
+		x1 = (int) ((getXpos() + xoffset) * tickStride);
+		y1 = (int) ((ypos + yoffset) * atomStride);
+		
 		xstride = xscale / 10;
 		ystride = yscale / 10;
 
 		Context2d context = canvas.getContext2d();
 	    CssColor color = CssColor.make(255,0,0);
 	    context.setFillStyle(color);
-        context.fillRect((xpos + xoffset), (ypos + yoffset), 5, 5);
+        context.fillRect(x1, y1, 5, 5);
         context.fill();
-        GWT.log("painting xpos " + xpos + " ypos " + ypos);
+        GWT.log("painting xpos " + getXpos() + " ypos " + ypos);
+	}
+
+	public void tick(int nAtoms) {
+		update(nAtoms);
+		tick();
+	}
+
+	public void setTickStride(Double i) {
+		tickStride = i;
+	}
+
+	public void setAtomStride(Double i) {
+		atomStride = i;
 	}
 }

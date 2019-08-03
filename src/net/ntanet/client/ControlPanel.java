@@ -24,7 +24,7 @@ public class ControlPanel extends Composite implements HasHandlers {
 	private TextBoxWithLabel nAtomText;
 	boolean toggle = true;
 
-	public ControlPanel (int nAtoms, Dimension dim) {
+	public ControlPanel (int halflife, int nAtoms, Dimension dim) {
 		VerticalPanel panel = new VerticalPanel();
 		panel.setHorizontalAlignment(HasHorizontalAlignment.ALIGN_RIGHT);
 

@@ -16,6 +16,7 @@ public class AtomSandbox extends Composite {
 	private Canvas canvas;
 	private double devicePixelRatio = 1.0;
 	private Dimension dim;
+	private int halflife;
 
 	private static int width = 12;
 	private static int height = 12;
@@ -46,8 +47,9 @@ public class AtomSandbox extends Composite {
 		GWT.log("nRow " + nRow + " nCol " + nCol + " nAtoms " + nAtomsStart);
 		
 	}
-	public AtomSandbox(int nAtoms, Dimension dim) {
+	public AtomSandbox(int halflife, int nAtoms, Dimension dim) {
 		nAtomsStart = nAtoms;
+		this.halflife = halflife;
 		this.dim = dim;
 		canvas = Canvas.createIfSupported();
         canvas.setWidth(dim.width * devicePixelRatio + "px");
@@ -73,7 +75,7 @@ public class AtomSandbox extends Composite {
 		int x = atom.getXpos() * stride + xoffset;
 		int y = atom.getYpos() * stride + yoffset;
 	    Context2d context = canvas.getContext2d();
-	    context.setFillStyle(atom.color);
+	    context.setFillStyle(atom.getColor());
 	    
     	drawCircle(canvas, x, y, width, height, false, false);
 	}
@@ -96,7 +98,7 @@ public class AtomSandbox extends Composite {
 		for (i = 0; i < nRow; i++) {
 			for ( j = 0; j < nCol; j++) {
 					Atom atom = this.atomTable[i][j];
-					if (!atom.decayed)
+					if (!atom.getDecayed())
 						if(atom.decay()) {
 							nAtoms--;
 							draw(atom);
@@ -111,22 +113,16 @@ public class AtomSandbox extends Composite {
 		int j = 0;
 
 		nAtoms = nAtomsStart;
-//		GWT.log("nAtomsStart = " + nAtoms);
 
 		generateRowCol(this.dim);
 		atomTable = new Atom[nRow][nCol];
-//		GWT.log("atomTable " + atomTable.length + " " + atomTable[0].length + " " + nRow + " " + nCol);
 
 		/* generate a 2D array of atoms */
 		for (i = 0; i < nRow; i++) {
 			for ( j = 0; j < nCol; j++) {
-				atomTable[i][j] = new Atom(CssColor.make("#0000ff"), i, j);
+				atomTable[i][j] = new Atom(this.halflife, CssColor.make("#0000ff"), i, j);
 			}
 		}
-//		i = 9; j = 300;
-//		GWT.log("atom# " + i + " " + j);
-//		atomTable[i][j] = new Atom(CssColor.make("#0000ff"), i, j);
-
 		clearCanvas();
 		repaint();
 	}
